@@ -7,7 +7,7 @@ Analysis of student dropout in the Dutch vocational education system.
 ### Results
 
 1. [Analysis results](https://lpvdt.github.io/dropout-analysis/causal.html)
-2. [Exploratory results](https://lpvdt.github.io/dropout-analysis/exploratory.html
+2. [Exploratory results](https://lpvdt.github.io/dropout-analysis/exploratory.html)
 
 ## Description
 
