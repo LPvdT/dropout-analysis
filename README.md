@@ -32,6 +32,12 @@ library(rms)
 1. [Analysis results](https://lpvdt.github.io/dropout-analysis/causal.html)
 2. [Exploratory results](https://lpvdt.github.io/dropout-analysis/exploratory.html)
 
+### Correlation matrix
+
+The missing correlation matrix from the exploratory analysis can be found [here](https://github.com/LPvdT/dropout-analysis/blob/master/img/matrix.png).
+
+
+
 ## Acknowledgements
 
 * The dataset used in this analysis is confidential and will not be uploaded.
