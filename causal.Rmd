@@ -1,0 +1,323 @@
+---
+title: "Thesis: Causal Analysis"
+author: "Laurens van der Tas"
+output: html_document
+---
+
+### Initialize: Load R environment, data and packages
+
+In this document we will investigate the causal relationships in our dataset using regression analysis.
+
+```{r Initialize, results='hide', message=FALSE, warning=FALSE}
+#Set working directory
+setwd("C:/Users/Laurens/Dropbox/University/Year 4/Period 2/Applied Economics Research Course/Thesis/data")
+
+#Load required packages
+library(foreign)
+library(stargazer)
+library(ggplot2)
+library(aod)
+library(gridExtra)
+library(ggthemes)
+library(dplyr)
+library(mfx)
+library(corrplot)
+library(car)
+library(LogisticDx)
+library(rms)
+
+#Enable anti-aliasing for rendered graphics
+library(knitr)
+#opts_chunk$set(out.width = '\\maxwidth')
+#dev = "CairoPNG", 
+
+#Load dataset
+data.dropout <- read.dta("DatasetTrimmed.dta")
+  #Read name vector of dataset
+  names(data.dropout)
+
+#Factorize binaries
+data.dropout$geslachtBin <- factor(data.dropout$geslachtBin, labels = c("Female", "Male"))
+data.dropout$allochtoonBin <- factor(data.dropout$allochtoonBin, labels = c("No", "Yes"))
+```
+
+```{r Export Commands, eval=FALSE, echo=FALSE}
+#Regular ggplot export
+ggsave(plot = zorg.1, 
+       "output.png", 
+       h = 9/3, 
+       w = 16/3, 
+       type = "cairo-png")
+
+#Summary statistics complete dataset
+stargazer(data.dropout)
+
+#Regression results (odds ratios)
+stargazer(logit.1, logit.5, 
+          title = "Regression Results (Odds Ratios)", 
+          align = TRUE, 
+          dep.var.labels =c("Dropout (Dichotomous)","Dropout (Dichotomous"),
+          covariate.labels = c("Emotional Stability", "Openness", "Conscientiousness", "Extraversion", "Agreeableness","Foreign Origin: Yes", "Age", "Educational Intelligence", "Conscientiousness*Foreign Origin: Yes", "Openness*Foreign Origin: Yes", "Emotional Stability*Foreign Origin: Yes"),
+          coef = list(coef.vector.1, coef.vector.5),
+          no.space = TRUE,
+          p.auto = FALSE,
+          type = "latex")
+
+#Regression results (mfx)
+stargazer(logit.1, logit.5,
+          title = "Regression Results (Marginal Effects)",
+          align = TRUE,
+          dep.var.labels = c("Dropout (Dichotomous)", "Dropout (Dichotomous)"),
+          covariate.labels = c(),
+          coef = list(mfx.1$mfxest, mfx.5$mfxest),
+          no.space = TRUE,
+          p.auto = FALSE,
+          type = "latex")
+```
+
+### Regression Models
+
+In this section all the investigated models, as well as the obsolete ones, are listed.
+
+```{r Logistic Evualuation, echo=FALSE, eval=FALSE}
+#For insane amounts of evaluation tools for logistic regression
+?LogisticDx
+```
+
+
+#### LPM Model 
+
+For testing purposes.
+
+```{r Causal LPM, eval=FALSE}
+#TRIVIAL: LPM model of Big Five on dropout
+lpm.1 <- lm(vrv_1 ~ zorgvuldig + stabiel + open + extravert + altrusme + allochtoonBin + geslachtBin, 
+            data = data.dropout)
+#Display results  
+summary(lpm.1)
+```
+
+#### First Logit Model
+
+Neglects the theory in the sense that it disregards *gender* and *foreign origin* as control variables.
+
+```{r Logit One}
+logit.1 <- glm(vrv_1 ~ stabiel + open + zorgvuldig + extravert + altrusme + age_opleiding,
+               family = binomial(logit),
+               data = data.dropout)
+
+#Display results
+summary(logit.1)
+
+#Calculate odds ratio vector
+coef.vector.1 <- exp(logit.1$coef)
+
+#R squared and Wald test significance
+require(rms)
+lrm(logit.1)
+
+#Marginal effects
+require(mfx)
+mfx.1 <- logitmfx(logit.1, data = data.dropout)
+
+#Variance inflation factor: multicollinearity test
+require(car)
+vif(logit.1) 
+sqrt(vif(logit.1)) > 2 #Bigger than 2 (or sometimes 2.5) signals relatively high multicollinearity
+
+#Test for outliers
+outlierTest(logit.1)
+
+#Cook's distance
+#plot(logit.1, which = 4, main = "Model One")
+
+ggplot(aes(x = seq_along(.cooksd), y = .cooksd), data = logit.1) +
+  geom_bar(stat = "identity") +
+  theme_bw(base_family = "serif") +
+  labs(title = "Model One: Cook's Distance",
+       x = "Observation Number",
+       y = "Cook's Distance") +
+  geom_hline(yintercept = 0.0081, colour = 2, alpha = 0.75, linetype = 5)
+
+#Resid vs fitted
+#plot(logit.1, which = 1, main = "Model One")
+
+ggplot(aes(x = .fitted, y = .resid), data = logit.1) +
+  geom_point(alpha = 1/4) +
+  geom_hline(yintercept = 0, linetype = 2, alpha = 0.75) +
+  geom_smooth(alpha = 0.15, method = "loess") +
+  theme_bw(base_family = "serif") +
+  labs(title = "Model One: Residuals vs. Fitted",
+       x = "Predicted Values",
+       y = "Residuals")
+
+#Model fitted on covariates
+ggplot(aes(x = data.dropout$zorgvuldig, y = .resid), data = logit.1) + 
+  theme_bw(base_family = "serif") +
+  geom_smooth(aes(x = .fitted, y = .resid)) +  
+  geom_point(alpha = 1/6) + 
+  geom_point(aes(x = data.dropout$open+0.1, y = .resid), colour = 2, alpha = 1/6) +
+  geom_point(aes(x = data.dropout$stabiel+0.2, y = .resid), colour = 3, alpha = 1/6) +
+  geom_point(aes(x = data.dropout$extravert+0.3, y = .resid), colour = 4, alpha = 1/6) +
+  geom_point(aes(x = data.dropout$altrusme+0.4, y = .resid), colour = 5, alpha = 1/6)
+
+```
+
+#### Second Logit Model
+
+Added *gender* and *foreign origin* as control variables to the first logit model.
+
+```{r Logit Two}
+logit.2 <- glm(vrv_1 ~ stabiel + open + zorgvuldig + extravert + altrusme + age_opleiding + geslachtBin + 
+                 allochtoonBin, 
+               family = binomial(logit),
+               data = data.dropout)
+
+#Display results
+summary(logit.2)
+
+#R squared and Wald test significance
+require(rms)
+lrm(logit.2)
+
+#Marginal effects
+require(mfx)
+logitmfx(logit.2, data = data.dropout)
+
+#Variance inflation factor: multicollinearity test
+require(car)
+vif(logit.2) 
+sqrt(vif(logit.2)) > 2
+
+#Test for outliers
+outlierTest(logit.2)
+```
+
+#### Third Logit Model
+
+Added interaction effect between emotional *stability* and *conscientiousness*, as suggested by the psychologist referred to by Yolanda.
+
+```{r Logit Three}
+logit.3 <- glm(vrv_1 ~ stabiel + open + zorgvuldig + extravert + altrusme + age_opleiding + stabiel:zorgvuldig,
+               family = binomial(logit),
+               data = data.dropout)
+
+#Display results
+summary(logit.3)
+
+#R squared and Wald test significance
+require(rms)
+lrm(logit.3)
+
+#Interpret marginal effects
+require(mfx)
+logitmfx(logit.3, data = data.dropout)
+
+#Variance inflation factor: multicollinearity test
+require(car)
+vif(logit.3) 
+sqrt(vif(logit.3)) > 2
+
+#Test for outliers
+outlierTest(logit.3)
+```
+
+#### Fourth Logit Model
+
+Dropped all the outliers for *age*: bigger than 35. Resulting in a sample size of 466 (before: 499).
+
+```{r Logit Four}
+logit.4 <- glm(vrv_1 ~ stabiel + open + zorgvuldig + extravert + altrusme + age_opleiding,
+               family = binomial(logit),
+               data = subset(data.dropout, !age_opleiding > 35))
+
+#Display results
+summary(logit.4)
+
+#R squared and Wald test significance
+require(rms)
+lrm(logit.4)
+
+#Marginal effects
+require(mfx)
+logitmfx(logit.4, data = data.dropout)
+
+#Variance inflation factor: multicollinearity test
+require(car)
+vif(logit.4) 
+sqrt(vif(logit.4)) > 2
+
+#Test for outliers
+outlierTest(logit.4)
+```
+
+#### Fifth Logit Model
+
+Our definitive, kick-ass model.
+
+```{r Logit Five}
+logit.5 <- glm(vrv_1 ~ zorgvuldig + open + stabiel + extravert + altrusme + zorgvuldig:allochtoonBin + open:allochtoonBin + stabiel:allochtoonBin + allochtoonBin + age_opleiding + leerintelligentie,
+               family = binomial(logit),
+               data = data.dropout)
+
+#Display results
+summary(logit.5)
+
+#Calculate odds ratio vector
+coef.vector.5 <- exp(logit.5$coef)
+
+#R squared and Wald test significance
+require(rms)
+lrm(logit.5)
+
+#Marginal effects
+require(mfx)
+mfx.5 <- logitmfx(logit.5, data = data.dropout)
+
+#Variance inflation factor: multicollinearity test
+require(car)
+vif(logit.5) 
+sqrt(vif(logit.5)) > 2
+
+#Test for outliers
+outlierTest(logit.5)
+
+#Cook's distance
+#plot(logit.5, which = 4, main = "Model Two")
+
+ggplot(aes(x = seq_along(.cooksd), y = .cooksd), data = logit.5) +
+  geom_bar(stat = "identity") +
+  theme_bw(base_family = "serif") +
+  labs(title = "Model Two: Cook's Distance",
+       x = "Observation Number",
+       y = "Cook's Distance") +
+  geom_hline(yintercept = 0.0082, colour = 2, alpha = 0.75, linetype = 5)
+
+#Resid vs fitted
+#plot(logit.5, which = 1, main = "Model Two")
+
+ggplot(aes(x = .fitted, y = .resid), data = logit.5) +
+  geom_point(alpha = 1/4) +
+  geom_hline(yintercept = 0, linetype = 2, alpha = 0.75) +
+  geom_smooth(alpha = 0.15, method = "loess") +
+  theme_bw(base_family = "serif") +
+  labs(title = "Model Two: Residuals vs. Fitted",
+       x = "Predicted Values",
+       y = "Residuals")
+```
+
+
+```{r Plot Logit Conscientiousness (Test), eval=FALSE, echo=FALSE}
+#Test scatterplot conscientiousness on dropout with logit model
+ggplot(aes(x = zorgvuldig, y = vrv_1), data = data.dropout) +
+  geom_jitter(position = position_jitter(width = 0.075, 
+                                         height = 0.075), 
+                                         alpha = 0.4) +  
+  stat_smooth(method="glm", 
+              family="binomial") +
+  scale_y_continuous(breaks = seq(0, 1, 1)) +
+  labs(title = "Logit Fit Conscientious on Dropout",
+       x = "Scale of Conscientiousness",
+       y = "Dropout (Dichotomous)") +
+  theme_bw(base_family = "serif")
+```

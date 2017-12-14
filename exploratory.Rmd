@@ -1,0 +1,514 @@
+---
+title: 'Thesis: Exploratory Data Analysis'
+author: "Laurens van der Tas"
+output: html_document
+---
+
+### Initialize R Environment & Load Data
+
+This section will run the commands necessary to initialize R and load up our packages and data.
+
+```{r Initialize, results='hide', message=FALSE, warning=FALSE}
+#Set working directory
+setwd("C:/Users/Laurens/Dropbox/University/Year 4/Period 2/Applied Economics Research Course/Thesis/data")
+
+#Load required packages
+library(foreign)
+library(stargazer)
+library(ggplot2)
+library(aod)
+library(gridExtra)
+library(ggthemes)
+library(dplyr)
+library(mfx)
+library(corrplot)
+
+#Enable anti-aliasing for rendered graphics
+library(knitr)
+#opts_chunk$set(out.width = '\\maxwidth')
+#dev = "CairoPNG", 
+
+#Load dataset
+data.dropout <- read.dta("DatasetTrimmed.dta")
+  #Read name vector of dataset
+  names(data.dropout)
+```
+
+```{r Export Command, eval=FALSE, echo=FALSE}
+#Regular ggplot export
+ggsave(plot = zorg.1, 
+       "output.png", 
+       h = 9/3, 
+       w = 16/3, 
+       type = "cairo-png")
+
+#R cairopng: run code below, run the plot, then run dev.off()
+png(filename = "Rplot%03d.png",
+    width = 1280, height = 1024, units = "px", pointsize = 12,
+     bg = "white",  res = NA, 
+    type = "cairo-png")
+
+#R PDF export ggplot: usage same as above
+pdf(file = "C:/Users/Laurens/Desktop/img.pdf",
+    width = 12,
+    height = 15,
+    pointsize = 5)
+```
+
+
+### Descriptive Statistics
+
+Here, the two dichotomous control variables are factorized.
+
+```{r Descriptive 1}
+#Factorize binaries
+data.dropout$geslachtBin <- factor(data.dropout$geslachtBin, labels = c("Female", "Male"))
+data.dropout$allochtoonBin <- factor(data.dropout$allochtoonBin, labels = c("No", "Yes"))
+```
+
+### Boxplots
+
+The following section will create boxplots for the *Big Five* and *Gender* with numerical summary statistics below each plot to clarify the visualisation.
+
+```{r}
+#Determine amounts of males and females in the sample
+length(subset(data.dropout, geslachtBin == "Male")$geslachtBin)
+length(subset(data.dropout, geslachtBin == "Female")$geslachtBin)
+```
+
+
+```{r Descriptive 2}
+#Boxplots for Big Five and Gender
+
+#Conscientiousness
+zorg <- qplot(
+  x = geslachtBin,
+  y = zorgvuldig,
+  main = "Boxplot for Conscientiousness and Gender",
+  xlab = "Gender",
+  ylab = "Level of Conscientiousness",
+  data = data.dropout,
+  geom = "boxplot") +
+    theme_bw(base_family = "serif") +
+    theme(axis.title.y = element_text(vjust = 1.0)) +
+    theme(axis.title.x = element_text(vjust = -0.5))
+
+zorg
+
+by(data.dropout$zorgvuldig, data.dropout$geslachtBin, summary)
+
+#Emotional Stability
+stab <- qplot(
+  x = geslachtBin,
+  y = stabiel,
+  main = "Boxplot for Emotional Stability and Gender",
+  xlab = "Gender",
+  ylab = "Level of Emotional Stability",
+  data = data.dropout,
+  geom = "boxplot") +
+    theme_bw(base_family = "serif") +
+    theme(axis.title.y = element_text(vjust = 1.0)) +
+    theme(axis.title.x = element_text(vjust = -0.5))
+
+stab
+
+by(data.dropout$stabiel, data.dropout$geslachtBin, summary)
+
+#Openness
+open <- qplot(
+  x = geslachtBin,
+  y = open,
+  main = "Boxplot for Openness and Gender",
+  xlab = "Gender",
+  ylab = "Level of Openness",
+  data = data.dropout,
+  geom = "boxplot") +
+    theme_bw(base_family = "serif") +
+    theme(axis.title.y = element_text(vjust = 1.0)) +
+    theme(axis.title.x = element_text(vjust = -0.5))
+
+open
+
+by(data.dropout$open, data.dropout$geslachtBin, summary)
+
+#Extraversion
+extr <- qplot(
+  x = geslachtBin,
+  y = extravert,
+  main = "Boxplot for Extraversion and Gender",
+  xlab = "Gender",
+  ylab = "Level of Extraversion",
+  data = data.dropout,
+  geom = "boxplot") +
+    theme_bw(base_family = "serif") +
+    theme(axis.title.y = element_text(vjust = 1.0)) +
+    theme(axis.title.x = element_text(vjust = -0.5))
+
+extr
+
+by(data.dropout$extravert, data.dropout$geslachtBin, summary)
+
+#Agreeableness
+altr <- qplot(
+  x = geslachtBin,
+  y = altrusme,
+  main = "Boxplot for Agreeableness and Gender",
+  xlab = "Gender",
+  ylab = "Level of Agreeableness",
+  data = data.dropout,
+  geom = "boxplot") +
+    theme_bw(base_family = "serif") +
+    theme(axis.title.y = element_text(vjust = 1.0)) +
+    theme(axis.title.x = element_text(vjust = -0.5))
+
+altr
+
+by(data.dropout$altrusme, data.dropout$geslachtBin, summary)
+
+#Uncomment to also group the plots in one window
+#grid.arrange(altr, extr, open, stab, zorg, ncol= 3)
+```
+
+**Next:** Boxplots for the *Big Five* and *Foreign Origin* with numerical summaries below each plot.
+
+```{r Descriptive 3}
+#Boxplots for Big Five and foreign origin
+
+#Conscientiousness
+zorg.1 <- qplot(
+  x = allochtoonBin,
+  y = zorgvuldig,
+  main = "Boxplot for Conscientiousness and Foreign Origin",
+  xlab = "Foreign Origin",
+  ylab = "Level of Conscientiousness",
+  data = data.dropout,
+  geom = "boxplot") +
+  theme_bw(base_family = "serif") +
+    theme(axis.title.y = element_text(vjust = 1.0)) +
+    theme(axis.title.x = element_text(vjust = -0.5))
+
+zorg.1
+
+by(data.dropout$zorgvuldig, data.dropout$allochtoonBin, summary)
+
+#Emotional Stability
+stab.1 <- qplot(
+  x = allochtoonBin,
+  y = stabiel,
+  main = "Boxplot for Emotional Stability and Foreign Origin",
+  xlab = "Foreign Origin",
+  ylab = "Level of Emotional Stability",
+  data = data.dropout,
+  geom = "boxplot") +
+  theme_bw(base_family = "serif") +
+    theme(axis.title.y = element_text(vjust = 1.0)) +
+    theme(axis.title.x = element_text(vjust = -0.5))
+
+stab.1
+
+by(data.dropout$stabiel, data.dropout$allochtoonBin, summary)
+
+#Openness
+open.1 <- qplot(
+  x = allochtoonBin,
+  y = open,
+  main = "Boxplot for Openness and Foreign Origin",
+  xlab = "Foreign Origin",
+  ylab = "Level of Openness",
+  data = data.dropout,
+  geom = "boxplot") +
+  theme_bw(base_family = "serif") +
+    theme(axis.title.y = element_text(vjust = 1.0)) +
+    theme(axis.title.x = element_text(vjust = -0.5))
+
+open.1
+
+by(data.dropout$open, data.dropout$allochtoonBin, summary)
+
+#Extraversion
+extr.1 <- qplot(
+  x = allochtoonBin,
+  y = extravert,
+  main = "Boxplot for Extraversion and Foreign Origin",
+  xlab = "Foreign Origin",
+  ylab = "Level of Extraversion",
+  data = data.dropout,
+  geom = "boxplot") +
+  theme_bw(base_family = "serif") +
+    theme(axis.title.y = element_text(vjust = 1.0)) +
+    theme(axis.title.x = element_text(vjust = -0.5))
+
+extr.1
+
+by(data.dropout$extravert, data.dropout$allochtoonBin, summary)
+
+#Agreeableness
+altr.1 <- qplot(
+  x = allochtoonBin,
+  y = altrusme,
+  main = "Boxplot for Agreeableness and Foreign Origin",
+  xlab = "Foreign Origin",
+  ylab = "Level of Agreeableness",
+  data = data.dropout,
+  geom = "boxplot") +
+  theme_bw(base_family = "serif") +
+    theme(axis.title.y = element_text(vjust = 1.0)) +
+    theme(axis.title.x = element_text(vjust = -0.5))
+
+altr.1
+
+by(data.dropout$altrusme, data.dropout$allochtoonBin, summary)
+
+#Uncomment to also group all plots in one window
+#grid.arrange(arrangeGrob(zorg.1, stab.1, open.1, extr.1, altr.1, ncol = 3))
+```
+
+### Scatterplots
+
+This section will display scatterplot for each of the *Big Five* variables on *Dropout*.
+
+```{r Descriptive 4, echo=FALSE}
+#Scatterplots Big Five on dropout
+zorg <- ggplot(aes(x = zorgvuldig, y = vrv_1), 
+       data = data.dropout) + 
+  geom_jitter(aes(colour = allochtoonBin, 
+                  shape = factor(geslachtBin), 
+                  size = 0.75), 
+              position = position_jitter(width = 0.3, 
+                                         height = 0.3), 
+                                         alpha = 0.4) +
+  scale_y_continuous(breaks = c(0, 1)) +
+  labs(
+    x = "Scale of Conscientiousness", 
+    y = "Dropout (Dichotomous)", 
+    title = "Scatterplot Conscientiousness on Dropout") +
+  theme_bw(base_family = "serif") +
+  guides(shape = guide_legend("Gender"), 
+         size = FALSE, 
+         colour = guide_legend("Foreign Origin")) +
+  geom_vline(xintercept = 1.5, alpha = 0.3) +
+  geom_vline(xintercept = 2.5, alpha = 0.3) +
+  geom_vline(xintercept = 3.5, alpha = 0.3) +
+  geom_vline(xintercept = 4.5, alpha = 0.3) +
+  geom_hline(yintercept = 0.5, alpha = 0.3)
+
+zorg
+
+stab <- ggplot(aes(x = stabiel, y = vrv_1), 
+               data = data.dropout) + 
+  geom_jitter(aes(colour = allochtoonBin, 
+                  shape = factor(geslachtBin), 
+                  size = 0.75), 
+              position = position_jitter(width = 0.3, 
+                                         height = 0.3), 
+                                         alpha = 0.4) +
+  scale_y_continuous(breaks = c(0, 1)) +
+  labs(
+    x = "Scale of Emotional Stability", 
+    y = "Dropout (Dichotomous)", 
+    title = "Scatterplot Emotional Stability on Dropout") +
+  theme_bw(base_family = "serif") +
+  guides(shape = guide_legend("Gender"), 
+         size = FALSE, 
+         colour = guide_legend("Foreign Origin")) +
+  geom_vline(xintercept = 1.5, alpha = 0.3) +
+  geom_vline(xintercept = 2.5, alpha = 0.3) +
+  geom_vline(xintercept = 3.5, alpha = 0.3) +
+  geom_vline(xintercept = 4.5, alpha = 0.3) +
+  geom_hline(yintercept = 0.5, alpha = 0.3)
+
+stab
+
+open <- ggplot(aes(x = open, y = vrv_1), 
+               data = data.dropout) + 
+  geom_jitter(aes(colour = allochtoonBin, 
+                  shape = factor(geslachtBin), 
+                  size = 0.75), 
+              position = position_jitter(width = 0.3, 
+                                         height = 0.3), 
+                                         alpha = 0.4) +
+  scale_y_continuous(breaks = c(0, 1)) +
+  labs(
+    x = "Scale of Openness", 
+    y = "Dropout (Dichotomous)", 
+    title = "Scatterplot Openness on Dropout") +
+  theme_bw(base_family = "serif") +
+  guides(shape = guide_legend("Gender"), 
+         size = FALSE, 
+         colour = guide_legend("Foreign Origin")) +
+  geom_vline(xintercept = 1.5, alpha = 0.3) +
+  geom_vline(xintercept = 2.5, alpha = 0.3) +
+  geom_vline(xintercept = 3.5, alpha = 0.3) +
+  geom_vline(xintercept = 4.5, alpha = 0.3) +
+  geom_hline(yintercept = 0.5, alpha = 0.3)
+
+open
+
+extr <- ggplot(aes(x = extravert, y = vrv_1), 
+               data = data.dropout) + 
+  geom_jitter(aes(colour = allochtoonBin, 
+                  shape = factor(geslachtBin), 
+                  size = 0.75), 
+              position = position_jitter(width = 0.3, 
+                                         height = 0.3), 
+                                         alpha = 0.4) +
+  scale_y_continuous(breaks = c(0, 1)) +
+  labs(
+    x = "Scale of Extraversion", 
+    y = "Dropout (Dichotomous)", 
+    title = "Scatterplot Extraversion on Dropout") +
+  theme_bw(base_family = "serif") +
+  guides(shape = guide_legend("Gender"), 
+         size = FALSE, 
+         colour = guide_legend("Foreign Origin")) +
+  geom_vline(xintercept = 1.5, alpha = 0.3) +
+  geom_vline(xintercept = 2.5, alpha = 0.3) +
+  geom_vline(xintercept = 3.5, alpha = 0.3) +
+  geom_vline(xintercept = 4.5, alpha = 0.3) +
+  geom_hline(yintercept = 0.5, alpha = 0.3)
+
+extr
+
+altr <- ggplot(aes(x = altrusme, y = vrv_1), 
+               data = data.dropout) + 
+  geom_jitter(aes(colour = allochtoonBin, 
+                  shape = factor(geslachtBin), 
+                  size = 0.75), 
+              position = position_jitter(width = 0.3, 
+                                         height = 0.3), 
+                                         alpha = 0.4) +
+  scale_y_continuous(breaks = c(0, 1)) +
+  labs(
+    x = "Scale of Agreeableness", 
+    y = "Dropout (Dichotomous)", 
+    title = "Scatterplot Agreeableness on Dropout") +
+  theme_bw(base_family = "serif") +
+  guides(shape = guide_legend("Gender"), 
+         size = FALSE, 
+         colour = guide_legend("Foreign Origin")) +
+  geom_vline(xintercept = 1.5, alpha = 0.3) +
+  geom_vline(xintercept = 2.5, alpha = 0.3) +
+  geom_vline(xintercept = 3.5, alpha = 0.3) +
+  geom_vline(xintercept = 4.5, alpha = 0.3) +
+  geom_hline(yintercept = 0.5, alpha = 0.3)
+
+altr
+
+#Uncomment to also display all plots in one window.
+#grid.arrange(zorg, stab, open, extr, altr, ncol = 2)
+```
+
+In this section the distribution of dropouts among *Gender* and *Foreign Origin* will be investigated.
+
+```{r}
+#Scatterplot distribution gender and foreign origin among dropout
+dropout.control <- ggplot(aes(x = geslachtBin, y = vrv_1), 
+               data = data.dropout) + 
+  geom_jitter(aes(colour = allochtoonBin, 
+                  size = 0.75), 
+              position = position_jitter(width = 0.2, 
+                                         height = 0.2), 
+                                         alpha = 1/3) +
+  scale_y_continuous(breaks = c(0, 1)) +
+  labs(
+    x = "Gender", 
+    y = "Dropout (Dichotomous)", 
+    title = "Distribution of Gender and Foreign Origin among Dropout") +
+  theme_bw(base_family = "serif") +
+  guides(colour = guide_legend("Foreign Origin"),
+         size = FALSE) +
+  geom_hline(yintercept = 0.5, alpha = 0.3)
+
+dropout.control
+
+#Dropouts by male and female
+by(data.dropout$vrv_1, data.dropout$geslachtBin, length)
+
+#Dropouts by foreign origin and native origin
+by(data.dropout$vrv_1, data.dropout$allochtoonBin, length)
+
+#Amount of people of foreign origin in data
+length(subset(data.dropout, allochtoonBin == "Yes")$allochtoonBin)
+
+#Amount of people of native origin in data
+length(subset(data.dropout, allochtoonBin == "No")$allochtoonBin)
+
+#Create variables for either foreign origin is true or not
+f1 <- subset(data.dropout, allochtoonBin == "Yes")
+f0 <- subset(data.dropout, allochtoonBin == "No")
+
+#Scatterplot dropout among foreign origin
+dropout.f1 <- ggplot(aes(x = geslachtBin, y = vrv_1), 
+               data = f1) + 
+  geom_jitter(position = position_jitter(width = 0.095, 
+                                         height = 0.095), 
+                                         alpha = 0.4) +
+  scale_y_continuous(breaks = c(0, 1)) +
+  labs(
+    x = "Gender", 
+    y = "Dropout (Dichotomous)", 
+    title = "Gender and Dropout among Foreign Origin") +
+  theme_bw(base_family = "serif")
+
+dropout.f1
+
+#Scatterplot dropout among native origin
+dropout.f0 <- ggplot(aes(x = geslachtBin, y = vrv_1), 
+               data = f0) + 
+  geom_jitter(position = position_jitter(width = 0.095, 
+                                         height = 0.095), 
+                                         alpha = 0.4) +
+  scale_y_continuous(breaks = c(0, 1)) +
+  labs(
+    x = "Gender", 
+    y = "Dropout (Dichotomous)", 
+    title = "Gender and Dropout among Native Origin") +
+  theme_bw(base_family = "serif")
+
+dropout.f0
+
+#Dropouts by male and female among foreign origin
+by(f1$vrv_1, f1$geslachtBin, length)
+
+#Dropouts by male and female among native origin
+by(f0$vrv_1, f0$geslachtBin, length)
+
+#DROPOUT FOREIGN ORIGIN
+#Dropout YES foreign origin and male
+length(subset(f1, vrv_1 == 1 & geslachtBin == "Male")$allochtoonBin)
+
+#Dropout YES foreign origin and female
+length(subset(f1, vrv_1 == 1 & geslachtBin == "Female")$allochtoonBin)
+
+#Dropout NO foreign origin and male
+length(subset(f1, vrv_1 == 0 & geslachtBin == "Male")$allochtoonBin)
+
+#Dropout NO foreign origin and female
+length(subset(f1, vrv_1 == 0 & geslachtBin == "Female")$allochtoonBin)
+
+#DROPOUT NATIVE ORIGIN
+#Generate native YES
+n1 <- subset(data.dropout, allochtoonBin == "No")
+#Generate native NO
+n0 <- subset(data.dropout, allochtoonBin == "Yes")
+
+#Dropout YES native origin and male
+length(subset(n1, vrv_1 == 1 & geslachtBin == "Male")$allochtoonBin)
+
+#Dropout YES native origin and female
+length(subset(n1, vrv_1 == 1 & geslachtBin == "Female")$allochtoonBin)
+
+#Dropout NO native origin and male
+length(subset(n1, vrv_1 == 0 & geslachtBin == "Male")$allochtoonBin)
+
+#Dropout NO native origin and female
+length(subset(n1, vrv_1 == 0 & geslachtBin == "Female")$allochtoonBin)
+```
+
+### Correlation Matrix
+
+```{r, eval=FALSE}
+CorMatrix <- cor(data.dropout)
+corrplot(CorMatrix, method = "circle", type = "lower", order ="AOE")
+```
+
